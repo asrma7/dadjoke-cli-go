@@ -1,0 +1,29 @@
+name: ci-main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21.x'
+      - name: Install dependencies
+        run: go mod tidy
+      - name: Test with Go
+        run: go test -json > TestResults-1.21.x.json
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-1.21.x
+          path: TestResults-1.21.x.json

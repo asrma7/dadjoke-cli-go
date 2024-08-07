@@ -1,0 +1,53 @@
+name: cd-main
+on:
+  push:
+    tags:
+      - v*
+  # workflow_run:
+  #   workflows: ["ci-main"]
+  #   types:
+  #     - completed
+  # release:
+  #   types:
+  #     - created
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, darwin, windows]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21.x'
+      - name: Install dependencies
+        run: go get .
+      - name: Build
+        run: |
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            env GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o dadjoke-${{ matrix.os }}_${{ matrix.arch }}.exe
+          else
+            env GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o dadjoke-${{ matrix.os }}_${{ matrix.arch }}
+          fi
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ./dadjoke-linux_amd64
+            ./dadjoke-linux_arm64
+            ./dadjoke-darwin_amd64
+            ./dadjoke-darwin_arm64
+            ./dadjoke-windows_amd64.exe
+            ./dadjoke-windows_arm64.exe
+            ./Source\ code.zip
+            ./Source\ code.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
